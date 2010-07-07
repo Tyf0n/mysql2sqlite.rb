@@ -142,6 +142,8 @@ private
     line.gsub!( /ON UPDATE [^,]*/, '' )
     line.gsub!( /COLLATE [^\s]+/, '')
     
+    line.gsub!( /" text/, '" text,' )
+    
     return line
   end
 
