@@ -116,8 +116,6 @@ private
 
     mysqldump_str = "#{@config[:mysqldump]} -u #{@config[:username]} --compact --compatible=ansi --complete-insert --skip-extended-insert --default-character-set=binary #{@config[:database]} " + table_str
     mysqldump_str += " -p#{@config[:password]}" if @config[:password]
-    
-    puts mysqldump_str
 
     return mysqldump_str
   end
