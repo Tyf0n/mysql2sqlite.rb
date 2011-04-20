@@ -3,6 +3,12 @@
 require 'fileutils'
 require 'yaml'
 
+begin
+  require 'rubygems'
+  require 'sequel'
+rescue Exception=>e
+end
+
 
 # ------------------------------ Classes ------------------------------ #
 
@@ -16,7 +22,7 @@ class MySQL2SqliteConverter
       :password  => nil,
       :overwrite => true,
       :tables    => nil,
-      :mysqldump => 'mysqldump',
+      :mysqldump => 'mysqldump5',
     }
 
     init_result = (args.length == 1) ? init_from_yaml(args) : init_from_command_line(args)
@@ -52,13 +58,28 @@ class MySQL2SqliteConverter
 
       complete_str = arr.join( '' )
       complete_str.gsub!( /,\n\);/, "\);\n" )
-      complete_str.gsub!( /\\r\\n/, "\r\n" )
+      complete_str.gsub!( /\\r/, "\r" )
+      complete_str.gsub!( /\\n/, "\n" )
 
       puts "Writing out to: #{@output_file}"
       File.open( @output_file, 'w') { |f| f.write( complete_str ) }
 
       puts "Writing out to: #{@sqlite_database}"
       return system( "cat #{@output_file} | sqlite3 #{@sqlite_database}" )
+    end
+  end
+  
+  # If you have Sequel gem, this method fixes the booleans
+  # 't' / 'f' instead of a tinyint 0/1
+  def fix_booleans
+    puts "Fix booleans on: #{@sqlite_database}"
+    db = Sequel.sqlite(@sqlite_database)
+    db.tables.each do |t|
+      boolean_cols = db.schema(t).map{|c,v|c if v[:db_type]=="bool"}.compact!
+      boolean_cols.each do |b|
+        db[t].filter(b=>0).update(b=>false)
+        db[t].filter(b=>1).update(b=>true)
+      end
     end
   end
 
@@ -132,17 +153,18 @@ private
   
   # Replaces the MySQL terms with Sqlite-friendly terms
   def translate_sql_differences( line )
-    line.gsub!( /UNSIGNED /, '' )
-    line.gsub!( /AUTO_INCREMENT/, ' primary key' )
-    line.gsub!( /SMALLINT\([0-9]*\)/, 'integer' )
-    line.gsub!( /TINYINT\([0-9]*\)/, 'integer' )
-    line.gsub!( /INT\([0-9]*\)/, 'integer' )
-    line.gsub!( /CHARACTER SET [^ ]+/, '' )
-    line.gsub!( /ENUM\([^)]*\)/, 'varchar(255)' )
-    line.gsub!( /ON UPDATE [^,]*/, '' )
-    line.gsub!( /COLLATE [^\s]+/, '')
+    line.gsub!( /UNSIGNED /i, '' )
+    line.gsub!( /AUTO_INCREMENT/i, ' primary key' )
+    line.gsub!( /SMALLINT\([0-9]*\)/i, 'integer' )
+    line.gsub!( /TINYINT\(1\)/i, 'bool' )
+    line.gsub!( /TINYINT\([2-9]*\)/i, 'integer' )
+    line.gsub!( /INT\([0-9]*\)/i, 'integer' )
+    line.gsub!( /CHARACTER SET [^ ]+/i, '' )
+    line.gsub!( /ENUM\([^)]*\)/i, 'varchar(255)' )
+    line.gsub!( /ON UPDATE [^,]*/i, '' )
+    line.gsub!( /COLLATE [^\s]+/i, '')
     
-    line.gsub!( /" text/, '" text,' )
+    #line.gsub!( /" text/i, '" text' )
     
     return line
   end
@@ -151,9 +173,11 @@ private
   def translate_character_differences( line )
     line.gsub!( /\`/, '"' )
     line.gsub!( /\\'/, '\'\'' )
+    line.gsub!( /\\"/,  '"')
 
     return line
   end
+  
 end
 
 
@@ -170,6 +194,7 @@ if __FILE__ == $0
     puts "   or: ./mysql2sqlite.rb config_file.yaml"
   else
     result = conv.mysql_to_sqlite()
+    conv.fix_booleans if defined?(Sequel)
 
     puts ( result ) ? "Done." : "Error."
   end
