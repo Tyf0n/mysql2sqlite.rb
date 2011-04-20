@@ -4,6 +4,17 @@
 
 A Ruby script to convert and export MySQL databases to Sqlite databases.
 
+This version is a fork from the original by Chris Cummer.
+No version is perfect so feel free to fiddle with the code in order to get what you want.
+Nevertheless, here is the list of changes I've included:
+
+* The default executable for dumps is mysqldump5 because it's the one I use (feel free to change it on line 25 is needed)
+* The script assumes that tinyint(1) is always a boolean and therefore declare it as a bool in sqlite
+* A couple of fixes to get the escaping in texts as correct as possible
+* If you have the Sequel gem, the script also fixes the boolean values. 0 => 'f' and 1 => 't'
+
+The last might be done without Sequel and more complicated Regex instead but I don't really have the time for that and it would probably be slower than using an ORM. If you don't use Sequel, it should be fairly easy to modify the script for ActiveRecords or whatever ORM you use. The Sequel way is simple because you don't need classes and can deal with a database object. Not sure it's possible with AR.
+
 
 == USAGE
 
