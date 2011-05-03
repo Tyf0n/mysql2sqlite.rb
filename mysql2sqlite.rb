@@ -75,7 +75,7 @@ class MySQL2SqliteConverter
     puts "Fix booleans on: #{@sqlite_database}"
     db = Sequel.sqlite(@sqlite_database)
     db.tables.each do |t|
-      boolean_cols = db.schema(t).map{|c,v|c if v[:db_type]=="bool"}.compact!
+      boolean_cols = db.schema(t).map{|c,v|c if v[:db_type]=="boolean"}.compact!
       boolean_cols.each do |b|
         db[t].filter(b=>0).update(b=>false)
         db[t].filter(b=>1).update(b=>true)
