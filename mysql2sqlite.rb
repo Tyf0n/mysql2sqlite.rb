@@ -156,7 +156,7 @@ private
     line.gsub!( /UNSIGNED /i, '' )
     line.gsub!( /AUTO_INCREMENT/i, ' primary key' )
     line.gsub!( /SMALLINT\([0-9]*\)/i, 'integer' )
-    line.gsub!( /TINYINT\(1\)/i, 'bool' )
+    line.gsub!( /TINYINT\(1\)/i, 'boolean' )
     line.gsub!( /TINYINT\([2-9]*\)/i, 'integer' )
     line.gsub!( /INT\([0-9]*\)/i, 'integer' )
     line.gsub!( /CHARACTER SET [^ ]+/i, '' )
